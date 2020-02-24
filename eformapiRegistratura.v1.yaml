@@ -1,0 +1,297 @@
+openapi: 3.0.0
+info:
+  title: registartura
+  version: '1.0'
+servers:
+  - url: 'http://localhost:3000'
+paths:
+  /novepodanie:
+    post:
+      summary: Nové podanie
+      operationId: post-novepodanie
+      responses:
+        '201':
+          description: Created
+        '409':
+          description: 'Conflict - Ak nastane chyba pri spracovaní (napríklad: podanie už bolo prenesené) vráti sa kód a popis chyby prečo nebolo možné vytvoriť nové podanie v module Dotácií.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/chybaprispracovani'
+        '500':
+          description: ''
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/podanie'
+      description: Umožní preposlať do modulu Dotácie podanie zaregistrované v Registratúre.
+  /novepodania:
+    post:
+      summary: Nové podania
+      operationId: post-novepodania
+      responses:
+        '200':
+          description: OK
+        '409':
+          description: 'Conflict - Ak sa v dávke podaní nepodarí nejaké spracovať, vráti sa zoznam id podani s kódom a popisom chyby pre každé nespracované podanie. Podanie je možné preposlať znovu.'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/chybaprispracovani'
+        '500':
+          description: Internal Server Error
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/podanie'
+        description: ''
+      description: Umožní preposlať do modulu Dotácie dávku podaní zaregistrovaných v Registratúre.
+  /prilohy:
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/octet-stream:
+              schema:
+                type: object
+        '404':
+          description: Not Found
+        '500':
+          description: Internal Server Error
+      operationId: get-prilohy
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: url
+          required: true
+        - schema:
+            type: string
+          in: query
+          name: tenantid
+          required: true
+components:
+  schemas:
+    priloha:
+      title: priloha
+      required:
+        - id
+        - nazov
+        - typ
+        - velkost
+        - url
+      properties:
+        id:
+          type: string
+        nazov:
+          type: string
+        typ:
+          type: string
+        velkost:
+          type: integer
+        url:
+          type: string
+      type: object
+    doveryhodnyzoznam:
+      title: doveryhodnyzoznam
+      type: object
+      properties:
+        id:
+          type: string
+        identifikator:
+          type: string
+        url:
+          type: string
+        teritorium:
+          type: string
+        casOverenia:
+          type: string
+          format: date-time
+    certifikat:
+      title: certifikat
+      required:
+        - id
+      properties:
+        id:
+          type: string
+        vysledokOverenia:
+          type: string
+          example: ' Platný'
+        overeneKCasu:
+          type: string
+          format: date-time
+        serioveCislo:
+          type: string
+        subjekt:
+          type: string
+        vydavatel:
+          type: string
+        platnyOd:
+          type: string
+        platnyDo:
+          type: string
+        odtlacok:
+          type: string
+        druhCertifikatu:
+          type: string
+        mandat:
+          type: string
+      type: object
+    kontajner:
+      title: kontajner
+      description: ''
+      type: object
+      properties:
+        id:
+          type: string
+        nazovSuboru:
+          type: string
+        pocetDokumetov:
+          type: integer
+        pocetPodpisov:
+          type: integer
+        podpisy:
+          type: array
+          items:
+            $ref: '#/components/schemas/podpis'
+        dokumenty:
+          type: array
+          items:
+            $ref: '#/components/schemas/priloha'
+      required:
+        - id
+        - nazovSuboru
+        - pocetDokumetov
+    eform:
+      title: eform
+      type: object
+      properties:
+        xml:
+          type: string
+        '':
+          type: string
+      description: 'Podanie obsahuje práve '
+    podanie:
+      title: podanie
+      description: Prijaté elektronické podania z registratúry.
+      type: object
+      properties:
+        id:
+          type: string
+        datumPrijatia:
+          type: string
+          format: date-time
+        odosielatel:
+          type: string
+        idSpisu:
+          type: string
+        podpisaneKontajnery:
+          type: array
+          items:
+            $ref: '#/components/schemas/kontajner'
+        prilohy:
+          type: array
+          items:
+            $ref: '#/components/schemas/priloha'
+        tenantId:
+          type: string
+          enum:
+            - MFSR
+            - IUVENTA
+            - MPSVR
+        xmlData:
+          type: string
+          description: Base64 Encoded string - dátove XML eformu
+        xmlDataKontajnerId:
+          type: string
+        xmlDataDokumentId:
+          type: string
+        registraturneCislo:
+          type: string
+        idSpisovehoObalu:
+          type: string
+      required:
+        - id
+        - datumPrijatia
+        - odosielatel
+        - idSpisu
+        - tenantId
+        - xmlData
+        - idSpisovehoObalu
+        - registraturneCislo
+    podpis:
+      title: podpis
+      type: object
+      x-examples:
+        example-1: {}
+      description: ''
+      properties:
+        id:
+          type: string
+        podpisal:
+          type: string
+          example: 'Jan Novák OPRÁVNENIE 1112    Organizácia "Union zdravotná poisťovňa, a.s.", "MANDANT Union zdravotná poisťovňa, a.s."'
+        stavPodpisu:
+          type: string
+          example: Podpis je platný (úplné overenie)
+        druhPodpisu:
+          type: string
+          example: Kvalifikovaný elektronický podpis bez časovej pečiatky
+        typPodpisu:
+          type: string
+          example: XAdES-B-B
+        overeneKCasu:
+          type: string
+          format: date-time
+        vysledokOverenia:
+          type: string
+          example: Platný
+        integrita:
+          type: string
+          example: Nenarušená
+        hashAlgoritmus:
+          type: string
+          example: SHA256
+        sifrovaciAlgoritmus:
+          type: string
+          example: RSA
+        podpisovaPolitika:
+          type: string
+          example: 1.3.158.36061701.1.2.2
+        casPodpisu:
+          type: string
+          format: date-time
+        doverihodnyCasPodpisu:
+          type: boolean
+        certifikaty:
+          type: array
+          items:
+            $ref: '#/components/schemas/certifikat'
+        doveryhodnyzoznam:
+          $ref: '#/components/schemas/doveryhodnyzoznam'
+      required:
+        - id
+        - podpisal
+        - stavPodpisu
+    chybaprispracovani:
+      title: chybaprispracovani
+      type: object
+      properties:
+        podanieId:
+          type: string
+        kodChyby:
+          type: string
+        popisChyby:
+          type: string
+      required:
+        - podanieId
+        - kodChyby
